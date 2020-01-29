@@ -21,6 +21,8 @@ mongoClient = None
 mongoDb = None
 mongoCollection = None
 
+google_api_key = None
+
 order_statuses = (
     'order received',
     'ready to deliver',
@@ -76,7 +78,14 @@ async def orders_to_make(request):
 
 @app.route("/orders_to_deliver")
 async def orders_to_deliver(request):
-    return json({'orders': mongoCollection.find({"status": "ready to deliver"})})
+    orders = [order for order in mongoCollection.find({"status": "ready to deliver"})]
+    response = {'orders': orders}
+    if orders and google_api_key is not None:
+        addresses = [order['address'] for order in orders]
+        addresses = '|'.join(addresses)
+        google_map_url = f'https://maps.googleapis.com/maps/api/staticmap?markers={addresses}&size=1000x1000&key={google_api_key}'
+        response['map_url'] = google_map_url
+    return json(response)
 
 
 def order_next_status(order_id, from_status):
@@ -111,6 +120,7 @@ async def order_delivered(request, order_id):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--random_seed', dest='random_seed', required=False)
+    parser.add_argument('--google_api_key', dest='google_api_key', required=False)
     args = parser.parse_args()
 
     order_id_auto = order_ids()
@@ -125,6 +135,8 @@ if __name__ == "__main__":
     mongoClient = MongoClient()
     mongoDb = mongoClient['pizza']
     mongoCollection = mongoDb['orders']
+
+    google_api_key = args.google_api_key
 
     app.run(host="0.0.0.0", port=8000)
 
