@@ -1,4 +1,6 @@
-ordering and delivery for a pizza store
+ordering and delivery web api for a pizza store
+
+uses sanic web framework, a mongodb mock and a very simple google map api call
 
 ```
 pip install -r requirements.txt
